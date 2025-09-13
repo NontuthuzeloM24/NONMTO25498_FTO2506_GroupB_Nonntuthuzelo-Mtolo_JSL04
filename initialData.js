@@ -40,3 +40,27 @@ const initialTasks = [
     status: "done",
   },
 ];
+
+// DOM elements
+const columContainers = {
+  todo: document.querySelector('[data-status="todo"] .task-container'),
+  doing: document.querySelector('[data-status="doing"] .task-container'),
+  done: document.querySelector('[data-status="done"] .task-container'),
+};
+
+function createTaskElement(task) {
+  const taskElement = document.createElement("div");
+  div.classList.add("task-div");
+  div.textContent = task.title;
+  div.addeventListener("click", () => openModal(task));
+  return div;
+}
+
+function renderTasks(tasks) {
+  Object.values(columContainers).forEach((container) => {container.innerHTML = "";});
+  tasks.forEach((task) => {
+    const taskElement = createTaskElement(task);
+    columContainers[task.status].appendChild(taskElement);
+  });
+}
+
