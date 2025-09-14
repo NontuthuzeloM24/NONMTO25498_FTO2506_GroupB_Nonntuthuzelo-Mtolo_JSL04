@@ -41,159 +41,180 @@ const initialTasks = [
   },
 ];
 
-// DOM elements
-const columContainers = {
-  todo: document.querySelector('[data-status="todo"] .tasks-container'),
-  doing: document.querySelector('[data-status="doing"] .tasks-container'),
-  done: document.querySelector('[data-status="done"] .tasks-container'),
-};
+// keeps track of tasks
+class TaskManager {
+  constructor(tasks) {
+    this.tasks = tasks;
+  }
 
-const columnHeaders = {
-  todo: document.querySelector('[data-status="todo"] .columnHeader'),
-  doing: document.querySelector('[data-status="doing"] .columnHeader'),
-  done: document.querySelector('[data-status="done"] .columnHeader'),
-}
+  getTasks(){
+    return this.tasks;
+  }
 
-let modalWrapper = null;
-let currentEditingTask = null;
+  getTaskById(id) {
+    return this.tasks.find(tasks => tasks.id === id);
+  }
 
-// Create and insert modal HTML into the document
-function createModal() {
-  const modalHTML = `
-    <div class="modal-backdrop" style="display:none;">
-      <div class="modal-content">
-        <button class="modal-close-btn">&times;</button>
-        <h3>Edit Task</h3>
-        <form id="task-form">
-          <label>
-            Title
-            <input type="text" id="task-title" name="title" required />
-          </label>
-          <label>
-            Description
-            <textarea id="task-description" name="description" rows="4"></textarea>
-          </label>
-          <label>
-            Status
-            <select id="task-status" name="status">
-              <option value="todo">To Do</option>
-              <option value="doing">Doing</option>
-              <option value="done">Done</option>
-            </select>
-          </label>
-          <button type="submit">Save</button>
-        </form>
-      </div>
-    </div>
-  `;
-    const wrapper = document.createElement("div");
-  wrapper.id = "modal-wrapper";
-  wrapper.innerHTML = modalHTML;
-  document.body.appendChild(wrapper);
-
-  // Event listeners
-  wrapper.querySelector(".modal-close-btn").addEventListener("click", closeModal);
-  wrapper.querySelector("#task-form").addEventListener("submit", handleFormSubmit);
-  wrapper.querySelector(".modal-backdrop").addEventListener("click", (e) => {
-    if (e.target.classList.contains("modal-backdrop")) {
-      closeModal();
+  updateTask(updatedTask) {
+    const index = this.tasks.findIndex(task => task.id === updatedTask.id);
+    if (index !== -1) {
+      this.tasks[index] = { ...updatedTask };
     }
-  });
-
-  return wrapper;
+  }
 }
 
-/**
- * Create a single task element
- */
-function createTaskElement(task) {
-  const taskEl = document.createElement("div");
-  taskEl.classList.add("task-div");
-  taskEl.textContent = task.title;
-  taskEl.style.cursor = "pointer";
-  taskEl.addEventListener("click", () => openModal(task));
-  return taskEl;
-}
+// ============ Modal ============
+// Handles modal open/close and form logic
 
-/**
- * Update column headers with task counts (e.g. TODO (3))
- */
-function updateColumnHeaders(tasks) {
-  const counts = { todo: 0, doing: 0, done: 0 };
-  tasks.forEach((task) => counts[task.status]++);
-  Object.keys(columnHeaders).forEach((status) => {
-    columnHeaders[status].textContent = `${status.toUpperCase()} (${counts[status]})`;
-  });
-}
+class Modal {
+  constructor() {
+    this.modalWrapper = document.getElementById('modal-wrapper');
+    this.closeBtn = this.modalWrapper.querySelector('.modal-close-btn');
+    this.form = this.modalWrapper.querySelector('#task-form');
+    this.titleInput = this.form.querySelector('#task-title');
+    this.descriptionInput = this.form.querySelector('#task-description');
+    this.statusSelect = this.form.querySelector('#task-status');
 
-/**
- * Render all tasks to the DOM
- */
-function renderTasks(tasks) {
-  // Clear each column
-  Object.values(columContainers).forEach((c) => (c.innerHTML = ""));
+    this.currentTaskId = null;
 
-  tasks.forEach((task) => {
-    const el = createTaskElement(task);
-    columContainers[task.status].appendChild(el);
-  });
+    // bindings
+    this.handleClose = this.handleClose.bind(this);
+    this.handleBackDropClick = this.handleBackDropClick.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
 
-  updateColumnHeaders(tasks);
-}
-
-/**
- * Open modal and populate with selected task
- */
-function openModal(task) {
-  if (!modalWrapper) {
-    modalWrapper = createModal();
+    // event listeners
+    this.closeBtn.addEventListener('click', this.handleClose);
+    this.modalWrapper.addEventListener('click', this.handleBackDropClick);
+    this.form.addEventListener('submit', this.handleSubmit);
   }
 
-  currentEditingTask = task;
-
-  modalWrapper.querySelector("#task-title").value = task.title;
-  modalWrapper.querySelector("#task-description").value = task.description;
-  modalWrapper.querySelector("#task-status").value = task.status;
-
-  modalWrapper.querySelector(".modal-backdrop").style.display = "flex";
-}
-
-/**
- * Close the modal
- */
-function closeModal() {
-  if (modalWrapper) {
-    modalWrapper.querySelector(".modal-backdrop").style.display = "none";
-  }
-  currentEditingTask = null;
-}
-
-/**
- * Handle task form submission
- */
-function handleFormSubmit(e) {
-  e.preventDefault();
-  if (!currentEditingTask) return;
-
-  const title = modalWrapper.querySelector("#task-title").value.trim();
-  const description = modalWrapper.querySelector("#task-description").value.trim();
-  const status = modalWrapper.querySelector("#task-status").value;
-
-  if (title === "") {
-    alert("Title cannot be empty");
-    return;
+  open(task) {
+    this.currentTaskId = task.id;
+    this.titleInput.value = task.title;
+    this.descriptionInput.value = task.description;
+    this.statusSelect.value = task.status;
+    this.modalWrapper.style.display = 'flex';
   }
 
-  // Update task object
-  currentEditingTask.title = title;
-  currentEditingTask.description = description;
-  currentEditingTask.status = status;
+  close() {
+    this.modalWrapper.style.display = 'none';
+    this.currentTaskId = null;
+    this.form.reset()
+  }
 
-  renderTasks(initialTasks);
-  closeModal();
+  handleClose() {
+    this.close();
+  }
+
+  handleBackDropClick(e) {
+  if (e.target === this.modalWrapper) {
+      this.close();
+   }
+  }
+
+  handleSubmit(e) {
+    e.preventDefault();
+    if (this.currentTaskId === null) return;
+
+    const updatedTask = {
+      id: this.currentTaskId,
+      title: this.titleInput.value.trim(),
+      description: this.descriptionInput.value.trim(),
+      status: this.statusSelect.value,
+    };
+
+    if (this.onSave) {
+      this.onSave(updatedTask);
+    }
+    this.close();
+  }
 }
 
-// === Initialize the App ===
-document.addEventListener("DOMContentLoaded", () => {
-  renderTasks(initialTasks);
+// ============ UI ============
+// Handles rendering tasks and wiring click events on tasks
+class UI {
+  constructor(taskManager, modal) {
+    this.taskManager = taskManager;
+    this.modal = modal;
+
+    // Containers for the 3 columns
+    this.columns = {
+      todo: document.querySelector('.column-div[data-status="todo"] .tasks-container'),
+      doing: document.querySelector('.column-div[data-status="doing"] .tasks-container'),
+      done: document.querySelector('.column-div[data-status="done"] .tasks-container'),
+    };
+
+    this.headers = {
+      todo: document.getElementById('toDoText'),
+      doing: document.getElementById('doingText'),
+      done: document.getElementById('doneText'),
+    };
+
+     this.boardTitleElem = document.getElementById('header-board-name');
+     this.boardsCountElem = document.getElementById('headline-sidepanel');
+
+     // Bindings
+     this.handleTaskClick = this.handleTaskClick.bind(this);
+     this.handleTaskSave = this.handleTaskSave.bind(this);
+
+     // Wire up modal save callback
+     this.modal.onSave = this.handleTaskSave;
+
+     // Initial render
+     this.render();
+  }
+
+  createTaskElement(task) {
+    const taskDiv = document.createElement('div');
+    taskDiv.classList.add('task-div');
+    taskDiv.textContent = task.title;
+    taskDiv.dataset.taskId = task.id;
+
+    taskDiv.addEventListener('click', () => this.handleTaskClick(task.id));
+    return taskDiv;
+  }
+
+  clearColumns() {
+    Object.values(this.columns).forEach(column => column.innerHTML = '');
+  }
+
+  render() {
+    this.clearColumns();
+
+    const task = this.taskManager.getTasks();
+
+    const counts = {
+      todo: 0,
+      doing: 0,
+      done: 0,
+    };
+
+    task.forEach(task => {
+      const taskElem = this.createTaskElement(task);
+      this.columns[task.status].appendChild(taskElem);
+      counts[task.status]++;
+    });
+
+    this.headers.todo.textContent = `TODO (${counts.todo})`;
+    this.headers.doing.textContent = `DOING (${counts.doing})`;
+    this.headers.done.textContent = `DONE (${counts.done})`;
+  }
+
+  handleTaskClick(taskId) {
+    const task = this.taskManager.getTaskById(taskId);
+    if(task) {
+      this.modal.open(task);
+    }
+  }
+
+  handleTaskSave(updatedTask) {
+    this.taskManager.updateTask(updatedTask)
+    this.render()
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const manager = new TaskManager(initialTasks);
+  const modal = new Modal();
+  new UI(manager, modal);
 });
