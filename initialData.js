@@ -48,6 +48,15 @@ const columContainers = {
   done: document.querySelector('[data-status="done"] .tasks-container'),
 };
 
+const columnHeaders = {
+  todo: document.querySelector('[data-status="todo"] .columnHeader'),
+  doing: document.querySelector('[data-status="doing"] .columnHeader'),
+  done: document.querySelector('[data-status="done"] .columnHeader'),
+}
+
+let modalWrapper = null;
+let currentEditingTask = null;
+
 // Create and insert modal HTML into the document
 function createModal() {
   const modalHTML = `
@@ -77,113 +86,114 @@ function createModal() {
       </div>
     </div>
   `;
-  const modalWrapper = document.createElement("div");
-  modalWrapper.id = "modal-wrapper";
-  modalWrapper.innerHTML = modalHTML;
-  document.body.appendChild(modalWrapper);
+    const wrapper = document.createElement("div");
+  wrapper.id = "modal-wrapper";
+  wrapper.innerHTML = modalHTML;
+  document.body.appendChild(wrapper);
 
-  return modalWrapper;
+  // Event listeners
+  wrapper.querySelector(".modal-close-btn").addEventListener("click", closeModal);
+  wrapper.querySelector("#task-form").addEventListener("submit", handleFormSubmit);
+  wrapper.querySelector(".modal-backdrop").addEventListener("click", (e) => {
+    if (e.target.classList.contains("modal-backdrop")) {
+      closeModal();
+    }
+  });
+
+  return wrapper;
 }
 
-let modalWrapper = null;
-let currentEditingTask = null;
-
 /**
- * Render a single task element.
- * @param {Object} task Task data.
- * @returns {HTMLElement} The created task element.
+ * Create a single task element
  */
 function createTaskElement(task) {
-  const taskElement = document.createElement("div");
-  taskElement.classList.add("task-div");
-  taskElement.textContent = task.title;
-  taskElement.style.cursor = "pointer";
-
-  taskElement.addEventListener("click", () => openModal(task));
-
-  return taskElement;
+  const taskEl = document.createElement("div");
+  taskEl.classList.add("task-div");
+  taskEl.textContent = task.title;
+  taskEl.style.cursor = "pointer";
+  taskEl.addEventListener("click", () => openModal(task));
+  return taskEl;
 }
 
 /**
- * Render all tasks in their respective columns.
- * @param {Array} tasks Array of task objects.
+ * Update column headers with task counts (e.g. TODO (3))
  */
-
-function renderTasks(tasks) {
-  Object.values(columContainers).forEach((container) => {container.innerHTML = "";});
-  tasks.forEach((task) => {
-    const taskElement = createTaskElement(task);
-    columContainers[task.status].appendChild(taskElement);
+function updateColumnHeaders(tasks) {
+  const counts = { todo: 0, doing: 0, done: 0 };
+  tasks.forEach((task) => counts[task.status]++);
+  Object.keys(columnHeaders).forEach((status) => {
+    columnHeaders[status].textContent = `${status.toUpperCase()} (${counts[status]})`;
   });
 }
 
 /**
- * Opens modal with the given task data populated.
- * @param {Object} task Task to edit.
+ * Render all tasks to the DOM
  */
+function renderTasks(tasks) {
+  // Clear each column
+  Object.values(columContainers).forEach((c) => (c.innerHTML = ""));
 
+  tasks.forEach((task) => {
+    const el = createTaskElement(task);
+    columContainers[task.status].appendChild(el);
+  });
+
+  updateColumnHeaders(tasks);
+}
+
+/**
+ * Open modal and populate with selected task
+ */
 function openModal(task) {
   if (!modalWrapper) {
     modalWrapper = createModal();
-    // Add event listener for closing the modal
-    modalWrapper.querySelector(".modal-close-btn").addEventListener("click", closeModal);
-    // Add event listener for form submission 
-    modalWrapper.querySelector("#task-form").addEventListener("submit", handleFormSubmit);
-    // Add event listener for clicking outside the modal content to close
-    modalWrapper.addEventListener("click", (event) => {
-      if (event.target === modalWrapper) {
-        closeModal();
-      }
-    });
+  }
+
+  currentEditingTask = task;
+
+  modalWrapper.querySelector("#task-title").value = task.title;
+  modalWrapper.querySelector("#task-description").value = task.description;
+  modalWrapper.querySelector("#task-status").value = task.status;
+
+  modalWrapper.querySelector(".modal-backdrop").style.display = "flex";
 }
 
-currentEditingTask = task;
-
-// populate form fields
-modalWrapper.querySelector("#task-title").value = task.title;
-modalWrapper.querySelector("#task-description").value = task.description;
-modalWrapper.querySelector("#task-status").value = task.status;
-
-modalWrapper.style.display = "flex"; 
-}
-
-/** Closes the modal and clears current editing task.
+/**
+ * Close the modal
  */
 function closeModal() {
   if (modalWrapper) {
-    modalWrapper.style.display = "none"
+    modalWrapper.querySelector(".modal-backdrop").style.display = "none";
   }
   currentEditingTask = null;
 }
 
 /**
- * Handles form submission to update task data.
- * @param {Event} event Form submit.
+ * Handle task form submission
  */
-
-function handleFormSubmit(event) {
-  event.preventDefault();
-  if (!currentEditingTask) return;  
+function handleFormSubmit(e) {
+  e.preventDefault();
+  if (!currentEditingTask) return;
 
   const title = modalWrapper.querySelector("#task-title").value.trim();
   const description = modalWrapper.querySelector("#task-description").value.trim();
   const status = modalWrapper.querySelector("#task-status").value;
 
   if (title === "") {
-    alert("Title cannot be empty")
+    alert("Title cannot be empty");
     return;
   }
 
-  // Update task data
+  // Update task object
   currentEditingTask.title = title;
   currentEditingTask.description = description;
   currentEditingTask.status = status;
 
-  //Re-render tasks after update
   renderTasks(initialTasks);
-
   closeModal();
 }
 
-// Initial render
-renderTasks(initialTasks);
+// === Initialize the App ===
+document.addEventListener("DOMContentLoaded", () => {
+  renderTasks(initialTasks);
+});
