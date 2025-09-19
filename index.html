@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -15,7 +14,7 @@
       sizes="32x32"
       href="./assets/favicon.svg"
     />
-    <script src="./initialData.js" defer></script>
+    <script defer src="./scripts.js" type="module"></script>
     <title>Kanban Task Management</title>
   </head>
 
@@ -53,15 +52,10 @@
           <div class="column-div" data-status="todo">
             <div id="todo-head-div" class="column-head-div">
               <span class="dot" id="todo-dot"></span>
-              <h4 id="toDoText" class="columnHeader">TODO (4)</h4>
+              <h4 id="toDoText" class="columnHeader">TODO (2)</h4>
             </div>
             <!-- Tasks container for TODO -->
-            <div class="tasks-container">
-              <div class="task-div">Launch Epic Career 🚀</div>
-              <div class="task-div">Conquer React⚛️</div>
-              <div class="task-div">Understand Databases⚙️</div>
-              <div class="task-div">Crush Frameworks🖼️</div>
-            </div>
+            <div class="tasks-container"></div>
           </div>
           <!-- DOING Column -->
           <div class="column-div" data-status="doing">
@@ -70,10 +64,7 @@
               <h4 id="doingText" class="columnHeader">DOING (2)</h4>
             </div>
             <!-- Tasks container for DOING -->
-            <div class="tasks-container">
-              <div class="task-div">Master JavaScript 💛</div>
-              <div class="task-div">Never Give Up 🏆</div>
-            </div>
+            <div class="tasks-container"></div>
           </div>
           <!-- DONE Column -->
           <div class="column-div" data-status="done">
@@ -82,47 +73,35 @@
               <h4 id="doneText" class="columnHeader">DONE (2)</h4>
             </div>
             <!-- Tasks container for DONE -->
-            <div class="tasks-container">
-              <div class="task-div">Explore ES6 Features 🚀</div>
-              <div class="task-div">Have fun 🥳</div>
-            </div>
+            <div class="tasks-container"></div>
           </div>
         </main>
       </div>
     </div>
-    <div id="modal-wrapper" style="display: none">
-      <div class="modal-backdrop"></div>
-      <div
-        class="modal-content"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-title"
-      >
-        <button class="modal-close-btn" aria-label="Close modal">
-          &times;
-        </button>
-        <h3 id="modal-title">Edit Task</h3>
-        <form id="task-form">
-          <label for="task-title">Title</label>
-          <input type="text" id="task-title" name="title" required />
+    <!-- Modal: Displays each tasks details when the task is clicked -->
+    <dialog id="task-modal">
+      <form method="dialog" id="task-form">
+        <div class="modal-header">
+          <h3>Task</h3>
+          <button type="button" class="close-btn" id="close-modal-btn">
+            &times;
+          </button>
+        </div>
 
-          <label for="task-description">Description</label>
-          <textarea
-            id="task-description"
-            name="description"
-            rows="4"
-          ></textarea>
+        <label for="task-title">Title</label>
+        <input type="text" id="task-title" name="title" required />
 
-          <label for="task-status">Status</label>
-          <select id="task-status" name="status" required>
-            <option value="todo">TODO</option>
-            <option value="doing">DOING</option>
-            <option value="done">DONE</option>
-          </select>
+        <label for="task-desc">Description</label>
+        <textarea id="task-desc" name="description" rows="4"></textarea>
 
-          <button type="submit">Save Changes</button>
-        </form>
-      </div>
-    </div>
+        <label for="task-status">Status</label>
+        <select id="task-status" name="status" required>
+          <option value="todo">todo</option>
+          <option value="doing">doing</option>
+          <option value="done">done</option>
+        </select>
+      </form>
+    </dialog>
   </body>
 </html>
+
